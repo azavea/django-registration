@@ -3,12 +3,18 @@ import hashlib
 import random
 import re
 
+from django import VERSION
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.db import transaction
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext_lazy as _
+
+if VERSION[0] > 1 or (VERSION[0] == 1 and VERSION[1] >= 6):
+    run_in_transaction = transaction.atomic
+else:
+    run_in_transaction = transaction.commit_on_success
 
 try:
     from django.contrib.auth import get_user_model
@@ -91,7 +97,7 @@ class RegistrationManager(models.Manager):
             registration_profile.send_activation_email(site)
 
         return new_user
-    create_inactive_user = transaction.commit_on_success(create_inactive_user)
+    create_inactive_user = run_in_transaction(create_inactive_user)
 
     def create_profile(self, user):
         """
